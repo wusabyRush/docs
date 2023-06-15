@@ -1,0 +1,300 @@
+---
+title: مكوّنات
+description: مقدمة في بناء واستخدام مكوّنات Astro.
+i18nReady: true
+---
+
+**مكوّنات استرو** هي اللبنات الأساسية لأي مشروع استرو. وهي شبيهة بقوالب HTML لا يوجد بها runtime تعمل في المتصفح. يمكنك التعرف على مكون استرو من خلال امتداد الملف:`.astro`.
+
+تعد مكوّنات استرو مرنة للغاية. غالبًا ما يحتوي مكوّن استرو على بعض **مكونات واجهات مُعاد استخدامها**، مثل ترويسة الصفحة أو مكون لبروفايل المستخدم. في بعض الأحيان ، قد يحتوي مكون استرو على جزء أصغر من HTML ، مثل مجموعة من وسوم `<meta>` الشائعة المستخدمة من محركات البحث. يمكن لمكوّنات استرو حتى أن تحتوي على تخطيط الصفحة بأكمله.
+
+والشيء الأكثر أهمية فيما يتعلّق بمكوّنات استرو هو أنها **لن تتم معالجتها في الجانب العميل**. تنتج إلى HTML إما في الوقت الفعلي للبناء أو باستخدام [تقنية القَسم اللادئي (SSR)](/en/guides/server-side-rendering/). يمكنك إدراج كود JavaScript داخل المعلومات الأساسية الخاصة بمكوّنك ، وسيتم إزالتها جميعًا من الصفحة النهائية التي يتم إرسالها إلى متصفحات مستخدميك. النتيجة هي موقع أسرع ، ولم يتم إضافة أي تأثير على الجافاسكربت بشكل افتراضي.
+
+عندما يحتاج مكوّن Astro الخاص بك إلى تفاعل على الجانب العميل ، يمكنك إضافة [علامات `<script>`](/en/guides/client-side-scripts/) العادية أو [مكوّنات أطر واجهات المستخدم](/en/core-concepts/framework-components/#hydrating-interactive-components).
+
+## هيكلية المكوّن
+
+يشتكل مكوّن استرو من جزئين رئيسيين: **Script كود المكوّن** و **Template قالب المكوّن**. كل جزء يؤدي وظيفة مختلفة ، ولكنها معًا توفر إطار عمل سهل الا
+
+```astro title="src/components/EmptyComponent.astro"
+---
+// Component Script (JavaScript)
+---
+<!-- Component Template (HTML + JS Expressions) -->
+```
+
+### كود المكون (Script)
+
+يحيط استرو كود المكون بالرمز (--) كسياج. إذا كنت قد كتبت ماركداون من قبل، فقد تكون على دراية بالفعل بمفهوم مماثل يسمى *frontmatter.* فكرة أسترو هنا مستوحاة بشكل مباشر من هذا المفهوم.
+
+يمكنك استخدام الجزء script لكتابة أي كود JavaScript تحتاجه في المكون الخاص بك. ويمكن أن يشمل ذلك ما يلي:
+
+- استيراد مكونات أسترو أخرى
+- استيراد مكونات أطر أخرى، مثل React
+- استيراد البيانات، مثل ملف JSON
+- جلب محتوى من طرف خارجي أو قاعدة بيانات
+- إنشاء متغيرات ستشير إليها في المكون
+
+
+```astro title="src/components/MyComponent.astro"
+---
+import SomeAstroComponent from '../components/SomeAstroComponent.astro';
+import SomeReactComponent from '../components/SomeReactComponent.jsx';
+import someData from '../data/pokemon.json';
+
+// Access passed-in component props, like `<X title="Hello, World" />`
+const {title} = Astro.props;
+// Fetch external data, even from a private API or database
+const data = await fetch('SOME_SECRET_API_URL/users').then(r => r.json());
+---
+<!-- Your template here! -->
+```
+
+صُمم هذا الجزء لضمان عدم انتقال او تنفيذ كود جافاسكريبت الموجود فيه إلى متصفح المستخدم، يُستخدم لكتابة كود مكلف أو حساس كاستدعاءات قاعدة البيانات دون القلق بشأن انتهاء وجودها في متصفح المستخدم.
+
+:::tip
+يمكن كتابة كود Typescript هنا أيضا
+:::
+
+### قالب المكون (Template)
+
+يقع قالب المكوّن تحت جزء الكود ويقدم HTML الخاص بمكونك.
+
+إذا كتبت HTML عادي، فسيقدم المكون HTML في أي صفحة استرو يتم استخدامها فيها.
+
+ومع ذلك، تدعم [صيغة مكوّنات استرو](/en/core-concepts/astro-syntax/) كذلك **تراكيب JavaScript** ووسوم [`<style>`](/en/guides/styling/#styling-in-astro) و [`<script>`](/en/guides/client-side-scripts/#using-script-in-astro) في استرو و**المكوّنات المستوردة** و[**موجهات استرو الخاصة**](/en/reference/directives-reference/). يمكن استخدام البيانات والقيم المعرفة بكود المكوّن في قالب المكوّن لإنشاء HTML ديناميكيا.
+
+```astro title="src/components/MyFavoritePokemon.astro"
+---
+// Your component script here!
+import Banner from '../components/Banner.astro';
+import ReactPokemonComponent from '../components/ReactPokemonComponent.jsx';
+const myFavoritePokemon = [/* ... */];
+const { title } = Astro.props;
+---
+<!-- HTML comments supported! -->
+{/* JS comment syntax is also valid! */}
+
+<Banner />
+<h1>Hello, world!</h1>
+
+<!-- Use props and other variables from the component script: -->
+<p>{title}</p>
+
+<!-- Include other UI framework components with a `client:` directive to hydrate: -->
+<ReactPokemonComponent client:visible />
+
+<!-- Mix HTML with JavaScript expressions, similar to JSX: -->
+<ul>
+  {myFavoritePokemon.map((data) => <li>{data.name}</li>)}
+</ul>
+
+<!-- Use a template directive to build class names from multiple strings or even objects! -->
+<p class:list={["add", "dynamic", {classNames: true}]} />
+```
+
+## البناء بالمكونات
+
+صُممت المكونات لتكون **قابلة للتركيب** و **إعادة الاستخدام**. يمكنك استخدام المكوّنات داخل أخرى لإنشاء واجهات مستخدم أكثر تطوّرًا. على سبيل المثال، يمكن استخدام مكوّن `Button` لإنشاء مكوّن `ButtonGroup`:
+
+```astro title="src/components/ButtonGroup.astro"
+---
+import Button from './Button.astro';
+---
+<div>
+  <Button title="Button 1" />
+  <Button title="Button 2" />
+  <Button title="Button 3" />
+</div>
+```
+
+## خصائص المكوّن
+
+يمكن تعريف خصائث لمكونات استرو وتمريها لها عند استدعائها، يمكن تعريف هذه الخصائص من خلال `Astro.props` في جزء كود المكون.
+
+فيما يلي مكون يقبل الخاصيتين `greeting` و `name`. لاحظ اننا استخرجنا الخاصيتين من `Astro.props`:
+
+```astro "Astro.props"
+---
+// src/components/GreetingHeadline.astro
+// Usage: <GreetingHeadline greeting="Howdy" name="Partner" />
+const { greeting, name } = Astro.props;
+---
+<h2>{greeting}, {name}!</h2>
+```
+الآن عند استيراد المكون واستخدامه في مكونات استرو أخرى (وحتى الصفحات والتخطيطات) يمكن تمرير قيم لهذه الخصائص.
+
+```astro /(\w+)=\S+/
+---
+// src/components/GreetingCard.astro
+import GreetingHeadline from './GreetingHeadline.astro';
+const name = "Astro"
+---
+<h1>Greeting Card</h1>
+<GreetingHeadline greeting="Hi" name={name} />
+<p>I hope you have a wonderful day!</p>
+```
+
+
+يمكنك كذلك تعريف الخصائص بـ Typescript من خلال `interface Props` وسيقوم استرو تلقائيا بإسناد النوع Props إلى المتغير `Astro.props` ليعطي رسائل التحذر والخطأ بناءا على النوع الذي عرفته. ويمكن أيضا وضع قيم افتراضية لهذه الخصائص عند استخراجها من `Astro.props`.
+
+```astro ins={3-6}
+---
+// src/components/GreetingHeadline.astro
+interface Props {
+  name: string;
+  greeting?: string;
+}
+
+const { greeting = "Hello", name } = Astro.props;
+---
+<h2>{greeting}, {name}!</h2>
+```
+
+يمكن تعريف قيم افتراضية لخصائص المكون لاستخدامها في حال لم تُمرر قيم لها.
+
+```astro ins="= \"Hello\"" ins="= \"Astronaut\""
+---
+// src/components/GreetingHeadline.astro
+const { greeting = "Hello", name = "Astronaut" } = Astro.props;
+---
+<h2>{greeting}, {name}!</h2>
+```
+
+## الفتحات (Slots)
+
+يُعد العنصر `<slot />` بمثابة حامل لمحتوى HTML خارجي يمرر عبره، فيمكن من خلاله إضافة عناصر فرعية من ملفات أخرى إلى داخل مكونك.
+
+بشكل افتراضي، يتم إدراج جميع العناصر الفرعية التي تم تمريرها إلى المكوّن في مكان العنصر `<slot />`.
+
+:::note
+بعكس الخصائص `props` التي يجلبها المكون عبر `Astro.props` بالتالي فهو قادر على استخدامها في أي مكان، فإن الفتحات `slots` تعرض العناصر الممررة لها في نفس المكان الذي كتبت فيه.
+:::
+
+
+```astro "<slot />"
+---
+// src/components/Wrapper.astro
+import Header from './Header.astro';
+import Logo from './Logo.astro';
+import Footer from './Footer.astro';
+
+const { title } = Astro.props
+---
+<div id="content-wrapper">
+  <Header />
+  <Logo />
+  <h1>{title}</h1>
+  <slot />  <!-- children will go here -->
+  <Footer />
+</div>
+```
+
+```astro {6-7}
+---
+// src/pages/fred.astro
+import Wrapper from '../components/Wrapper.astro';
+---
+<Wrapper title="Fred's Page">
+  <h2>All about Fred</h2>
+  <p>Here is some stuff about Fred.</p>
+</Wrapper>
+```
+
+هذا النمط هو أساس [تخطيطات استرو](/en/core-concepts/layouts/): فكامل صفحة HTML "تُغلف" في وسوم `<SomeLayoutComponent></SomeLayoutComponent>` والذي بدوره يقوم بعرضها ضمن تخطيط محدد.
+
+
+
+### الفتحات المسماة (Named Slots)
+
+يمكن لمكون استرو أيضًا أن يحتوي على فتحات بأسماء محددة. وهذا يسمح لك باستخدام عناصر HTML في الفتحة (slot) التي تحمل نفس التسمية.
+
+تسمى الفتحات بالخاصية `name`:
+
+```astro /<slot .*?/>/
+---
+// src/components/Wrapper.astro
+import Header from './Header.astro';
+import Logo from './Logo.astro';
+import Footer from './Footer.astro';
+
+const { title } = Astro.props
+---
+<div id="content-wrapper">
+  <Header />
+  <slot name="after-header"/>  <!--  children with the `slot="after-header"` attribute will go here -->
+  <Logo />
+  <h1>{title}</h1>
+  <slot />  <!--  children without a `slot`, or with `slot="default"` attribute will go here -->
+  <Footer />
+  <slot name="after-footer"/>  <!--  children with the `slot="after-footer"` attribute will go here -->
+</div>
+```
+
+لتمرير عنصر HTML عبر فتحة معينة، استخدم الخاصية `slot` في هذا العنصر باسم الفتحة. بقية العناصر ستمرر عبر عنصر `<slot />` (غير المسمى).
+
+
+```astro /slot=".*?"/
+---
+// src/pages/fred.astro
+import Wrapper from '../components/Wrapper.astro';
+---
+<Wrapper title="Fred's Page">
+  <img src="https://my.photo/fred.jpg" slot="after-header">
+  <h2>All about Fred</h2>
+  <p>Here is some stuff about Fred.</p>
+  <p slot="after-footer">Copyright 2022</p>
+</Wrapper>
+```
+
+
+استخدم الخاصية `slot="my-slot"` العنصر المراد وضعه كبديل لـ `<slot name="my-slot" />`.
+
+:::tip
+الفتحات المسماة يمكن استخدامها أيضا مع [المكونات من أطر الواجهات](/en/core-concepts/framework-components/)!
+:::
+
+
+### محتوى الفتحات البديل
+
+يمكن للفتحات عرض **محتوى بديل**. عندما لا تُمرر عناصر عبر فتحة، سيعرض العنصر `<slot />` محتواه كبديل.
+
+```astro {14}
+---
+// src/components/Wrapper.astro
+import Header from './Header.astro';
+import Logo from './Logo.astro';
+import Footer from './Footer.astro';
+
+const { title } = Astro.props
+---
+<div id="content-wrapper">
+  <Header />
+  <Logo />
+  <h1>{title}</h1>
+  <slot>
+    <p>This is my fallback content, if there is no child passed into slot</p>
+  </slot>
+  <Footer />
+</div>
+```
+
+
+## مكونات HTML
+
+يدعم استرو استيراد واستخدام ملفات `.html` كمكونات، أو استخدام هذه الملفات كصفحات في `src/pages/` المجلد. يُحتمل أن تستخدم مكونات HTML إذا كنت تستخدم كود مشروع مبني مسبقا بدون استخدام أطر للواجهات, أو إذا أردت بناء مكونات ثابتة.
+
+تحتوي مكوّنات HTML على عناصر HTML فقط، وبالتالي لا تتوفر بها ميزات مهمة في مكوّنات استرو:
+
+- لا تدعم جزء كود المكون، أو الاستيرادات على الخادم، وغيرها.
+- لا تُجمع أو تٌعالج أي وسوم `<script>` وتٌعامل كأنها تملك `is:inline`.
+- يمكنها [الإشارة إلى الأصول التي توجد في المجلد `public/` فقط](/en/guides/images/#public).
+
+:::note
+عنصر [`<slot />`](/ar/core-concepts/astro-components/#slots) داخل مكوّن HTML سيعمل تمامًا كما يعمل داخل مكوّن استرو. ولتفادي الخلط بينه وبين [HTML Web Component Slot](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot)، يجب إضافة `is:inline` إلى عنصر `<slot>` الخاص بك.
+:::
+
+## الخطوات التالية
+
+📚 تعرّف على استخدام [مكوّنات أطر الواجهات](/ar/core-concepts/framework-components/) في مشروع استرو الخاص بك.
+
